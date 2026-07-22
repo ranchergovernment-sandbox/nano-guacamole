@@ -1,2 +1,0 @@
-### Inter-Server Synchronization
-
