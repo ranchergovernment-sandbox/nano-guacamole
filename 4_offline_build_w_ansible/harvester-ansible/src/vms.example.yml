@@ -1,0 +1,37 @@
+# vms.example.yml
+#
+# List of VMs to create on EVERY cluster in the inventory, from an
+# already-existing VirtualMachineImage (see images.example.yml).
+# Rename to vms.yml and edit as needed, then run:
+#   ansible-playbook -i inventory.ini site_vms.yml -e @vms.yml
+
+vms:
+  - name: ubuntu-test-01
+    namespace: default
+    image_name: ubuntu-22-04
+    image_namespace: default
+    cpu_cores: 2
+    memory: 4Gi
+    disk_size: 20Gi
+    # storage_class: harvester-longhorn-r1   # optional, defaults to default_storage_class_name
+    # network_name: default                 # optional, "default" = pod network, no VLAN needed
+    running: true
+
+  - name: rocky-test-01
+    namespace: vm-images
+    image_name: rocky-9
+    image_namespace: vm-images
+    cpu_cores: 4
+    memory: 8Gi
+    disk_size: 40Gi
+    running: true
+    # Example of a per-VM cloud-init override with an SSH key injected.
+    # cloud_init_user_data: |
+    #   #cloud-config
+    #   package_update: true
+    #   packages:
+    #     - qemu-guest-agent
+    #   ssh_authorized_keys:
+    #     - ssh-ed25519 AAAA... you@example.com
+    #   runcmd:
+    #     - [ systemctl, enable, --now, qemu-guest-agent.service ]

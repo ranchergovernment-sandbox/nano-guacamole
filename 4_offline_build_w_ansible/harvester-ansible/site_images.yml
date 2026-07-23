@@ -1,0 +1,12 @@
+---
+# site_images.yml
+#
+# Usage:
+#   ansible-playbook -i inventory.ini site_images.yml -e @images.yml
+#
+- name: Create VM images on Harvester clusters
+  hosts: harvester_clusters
+  gather_facts: false
+  become: true
+  roles:
+    - harvester_vm_images

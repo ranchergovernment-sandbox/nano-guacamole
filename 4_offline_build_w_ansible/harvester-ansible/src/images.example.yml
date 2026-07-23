@@ -1,0 +1,18 @@
+# images.example.yml
+#
+# List of images to create on EVERY cluster in the inventory.
+# Rename to images.yml and edit as needed, then run:
+#   ansible-playbook -i inventory.ini site_images.yml -e @images.yml
+
+images:
+  - name: ubuntu-22-04
+    namespace: default
+    url: https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
+
+  - name: rocky-9
+    namespace: vm-images
+    url: https://download.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2
+
+  - name: rhel-9
+    namespace: vm-images
+    url: https://example.internal/images/rhel-9.qcow2

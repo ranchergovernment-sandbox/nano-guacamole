@@ -1,0 +1,34 @@
+---
+kubeconfig_path: /etc/rancher/rke2/rke2.yaml
+kubectl_bin: /var/lib/rancher/rke2/bin/kubectl
+
+# Storage class used for a VM's disk when the vm entry doesn't set its own
+# storage_class. Matches the class created by the harvester_vm_images role.
+default_storage_class_name: harvester-longhorn-r1
+
+# Minimal, credential-free cloud-init used when a vm entry doesn't provide
+# its own cloud_init_user_data. Just installs/enables the guest agent so
+# Harvester can report IP/status. Override per-VM for SSH keys, passwords,
+# networking, etc.
+default_cloud_init_user_data: |
+  #cloud-config
+  package_update: true
+  packages:
+    - qemu-guest-agent
+  runcmd:
+    - [ systemctl, enable, --now, qemu-guest-agent.service ]
+
+# List of VMs to create on every host this role runs against.
+# Each item:
+#   name:             VM name
+#   namespace:        namespace (VM and image must be reachable from here)
+#   image_name:       name of an existing VirtualMachineImage
+#   image_namespace:  namespace of that VirtualMachineImage
+#   cpu_cores:        optional, default 2
+#   memory:           optional, default "4Gi"
+#   disk_size:        optional, default "10Gi"
+#   storage_class:    optional, default default_storage_class_name
+#   network_name:     optional, default "default" (pod network, no VLAN setup needed)
+#   running:          optional, default true
+#   cloud_init_user_data: optional raw override, default default_cloud_init_user_data
+vms: []

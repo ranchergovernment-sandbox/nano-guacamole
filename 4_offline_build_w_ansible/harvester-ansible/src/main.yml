@@ -1,0 +1,96 @@
+---
+- name: Verify kubeconfig is present on this node
+  ansible.builtin.stat:
+    path: "{{ kubeconfig_path }}"
+  register: kc_stat
+  failed_when: not kc_stat.stat.exists
+
+- name: Create replica1 storage class (leaves harvester-longhorn untouched)
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  ansible.builtin.shell: |
+    cat <<'EOF' | {{ kubectl_bin }} apply -f -
+    apiVersion: storage.k8s.io/v1
+    kind: StorageClass
+    metadata:
+      name: {{ new_storage_class_name }}
+    provisioner: driver.longhorn.io
+    allowVolumeExpansion: true
+    reclaimPolicy: Delete
+    volumeBindingMode: Immediate
+    parameters:
+      numberOfReplicas: "1"
+      staleReplicaTimeout: "30"
+      migratable: "true"
+    EOF
+  register: sc_result
+  changed_when: "'created' in sc_result.stdout or 'configured' in sc_result.stdout"
+
+- name: Ensure target namespaces exist
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  ansible.builtin.shell: |
+    set -e
+    {{ kubectl_bin }} get namespace {{ item }} >/dev/null 2>&1 || \
+    {{ kubectl_bin }} create namespace {{ item }}
+  loop: "{{ images | map(attribute='namespace') | unique | list }}"
+  loop_control:
+    label: "{{ item }}"
+  register: ns_result
+  changed_when: "'created' in ns_result.stdout"
+
+- name: Delete existing VM images (targetStorageClassName can't be changed on an existing image)
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  ansible.builtin.shell: >
+    {{ kubectl_bin }} delete virtualmachineimage {{ item.name }}
+    -n {{ item.namespace }} --ignore-not-found --wait=true --timeout=120s
+  loop: "{{ images }}"
+  loop_control:
+    label: "{{ item.namespace }}/{{ item.name }}"
+  register: delete_result
+  changed_when: "'deleted' in delete_result.stdout"
+
+- name: Create Harvester VirtualMachineImage resources
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  ansible.builtin.shell: |
+    cat <<'EOF' | {{ kubectl_bin }} apply -f -
+    apiVersion: harvesterhci.io/v1beta1
+    kind: VirtualMachineImage
+    metadata:
+      name: {{ item.name }}
+      namespace: {{ item.namespace }}
+    spec:
+      displayName: {{ item.name }}
+      sourceType: download
+      url: {{ item.url }}
+      targetStorageClassName: {{ new_storage_class_name }}
+    EOF
+  loop: "{{ images }}"
+  loop_control:
+    label: "{{ item.namespace }}/{{ item.name }}"
+  register: image_result
+  changed_when: "'created' in image_result.stdout or 'configured' in image_result.stdout"
+
+- name: Show apply results
+  ansible.builtin.debug:
+    msg: "{{ item.item.namespace }}/{{ item.item.name }}: {{ item.stdout }}"
+  loop: "{{ image_result.results }}"
+  loop_control:
+    label: "{{ item.item.namespace }}/{{ item.item.name }}"
+
+# Optional: uncomment to block until each image finishes downloading.
+# Harvester sets status.progress and an "Initialized"/"Ready" condition.
+#
+# - name: Wait for images to finish downloading
+#   environment:
+#     KUBECONFIG: "{{ kubeconfig_path }}"
+#   ansible.builtin.shell: >
+#     {{ kubectl_bin }} wait virtualmachineimage {{ item.name }}
+#     -n {{ item.namespace }}
+#     --for=condition=Initialized=True
+#     --timeout=600s
+#   loop: "{{ images }}"
+#   loop_control:
+#     label: "{{ item.namespace }}/{{ item.name }}"

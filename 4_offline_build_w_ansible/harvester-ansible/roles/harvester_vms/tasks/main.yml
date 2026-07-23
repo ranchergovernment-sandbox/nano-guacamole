@@ -1,0 +1,126 @@
+---
+- name: Verify kubeconfig is present on this node
+  ansible.builtin.stat:
+    path: "{{ kubeconfig_path }}"
+  register: kc_stat
+  failed_when: not kc_stat.stat.exists
+
+- name: Get source image details and verify readiness
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  ansible.builtin.shell: >
+    {{ kubectl_bin }} get virtualmachineimage {{ item.image_name }}
+    -n {{ item.image_namespace }}
+    -o json
+  loop: "{{ vms }}"
+  loop_control:
+    label: "{{ item.image_namespace }}/{{ item.image_name }}"
+  register: image_query
+  changed_when: false
+
+- name: Validate image initialized status
+  ansible.builtin.assert:
+    that:
+      - (item.stdout | from_json).status.conditions | selectattr('type', 'equalto', 'Initialized') | map(attribute='status') | first == 'True'
+    fail_msg: "Image {{ item.item.image_namespace }}/{{ item.item.image_name }} is not initialized!"
+  loop: "{{ image_query.results }}"
+  loop_control:
+    label: "{{ item.item.image_namespace }}/{{ item.item.image_name }}"
+
+- name: Create Harvester virtual machines from image
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  ansible.builtin.shell: |
+    cat <<'EOF' | {{ kubectl_bin }} apply -f -
+    {% set img_data = (image_query.results | selectattr('item.name', 'equalto', item.name) | map(attribute='stdout') | first | from_json) %}
+    {% set target_sc = item.storage_class | default(img_data.status.storageClassName | default('harvester-longhorn')) %}
+    apiVersion: kubevirt.io/v1
+    kind: VirtualMachine
+    metadata:
+      name: {{ item.name }}
+      namespace: {{ item.namespace }}
+      annotations:
+        harvesterhci.io/volumeClaimTemplates: '{{ [{"metadata": {"name": item.name + "-disk-0", "annotations": {"harvesterhci.io/imageId": item.image_namespace + "/" + item.image_name}}, "spec": {"accessModes": ["ReadWriteMany"], "resources": {"requests": {"storage": item.disk_size | default("10Gi")}}, "volumeMode": "Block", "storageClassName": target_sc}}] | to_json }}'
+      labels:
+        harvesterhci.io/creator: harvester
+    spec:
+      runStrategy: {{ 'RerunOnFailure' if (item.running | default(true)) else 'Halted' }}
+      template:
+        metadata:
+          labels:
+            harvesterhci.io/vmName: {{ item.name }}
+        spec:
+          domain:
+            cpu:
+              cores: {{ item.cpu_cores | default(2) }}
+            devices:
+              disks:
+                - bootOrder: 1
+                  disk:
+                    bus: virtio
+                  name: disk-0
+                - disk:
+                    bus: virtio
+                  name: cloudinitdisk
+              interfaces:
+                - name: {{ item.network_name | default('default') }}
+                  model: virtio
+    {% if item.network_name is defined and item.network_name != 'default' %}
+                  bridge: {}
+    {% else %}
+                  masquerade: {}
+    {% endif %}
+            resources:
+              requests:
+                memory: {{ item.memory | default("4Gi") }}
+              limits:
+                memory: {{ item.memory | default("4Gi") }}
+          networks:
+            - name: {{ item.network_name | default('default') }}
+    {% if item.network_name is defined and item.network_name != 'default' %}
+              multus:
+                networkName: {{ item.network_namespace | default(item.namespace) }}/{{ item.network_name }}
+    {% else %}
+              pod: {}
+    {% endif %}
+          volumes:
+            - name: disk-0
+              persistentVolumeClaim:
+                claimName: {{ item.name }}-disk-0
+            - name: cloudinitdisk
+              cloudInitNoCloud:
+                userData: |
+    {{ (item.cloud_init_user_data | default(default_cloud_init_user_data)) | indent(14, first=true) }}
+    {% if item.ip_address is defined %}
+                networkData: |
+                  network:
+                    version: 2
+                    ethernets:
+                      {{ item.guest_interface_name | default('enp1s0') }}:
+                        match:
+                          name: {{ item.guest_interface_name | default('enp1s0') }}
+                        set-name: {{ item.guest_interface_name | default('enp1s0') }}
+                        addresses:
+                          - {{ item.ip_address }}
+    {% if item.gateway is defined %}
+                        gateway4: {{ item.gateway }}
+    {% endif %}
+    {% if item.nameservers is defined %}
+                        nameservers:
+                          addresses: {{ item.nameservers | to_json }}
+    {% endif %}
+    {% endif %}
+          evictionStrategy: LiveMigrateIfPossible
+    EOF
+  loop: "{{ vms }}"
+  loop_control:
+    label: "{{ item.namespace }}/{{ item.name }}"
+  register: vm_result
+  changed_when: "'created' in vm_result.stdout or 'configured' in vm_result.stdout"
+
+- name: Show apply results
+  ansible.builtin.debug:
+    msg: "{{ item.item.namespace }}/{{ item.item.name }}: {{ item.stdout }}"
+  loop: "{{ vm_result.results }}"
+  loop_control:
+    label: "{{ item.item.namespace }}/{{ item.item.name }}"

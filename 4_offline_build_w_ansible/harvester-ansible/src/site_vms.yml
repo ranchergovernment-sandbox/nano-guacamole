@@ -1,0 +1,12 @@
+---
+# site_vms.yml
+#
+# Usage:
+#   ansible-playbook -i inventory.ini site_vms.yml -e @vms.yml
+#
+- name: Create virtual machines on Harvester clusters
+  hosts: harvester_clusters
+  gather_facts: false
+  become: true
+  roles:
+    - harvester_vms

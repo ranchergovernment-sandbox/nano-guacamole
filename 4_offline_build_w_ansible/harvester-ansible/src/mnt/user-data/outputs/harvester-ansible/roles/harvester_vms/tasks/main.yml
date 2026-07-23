@@ -1,0 +1,92 @@
+---
+- name: Verify kubeconfig is present on this node
+  ansible.builtin.stat:
+    path: "{{ kubeconfig_path }}"
+  register: kc_stat
+  failed_when: not kc_stat.stat.exists
+
+- name: Confirm source images exist and are ready before creating VMs
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  ansible.builtin.shell: >
+    {{ kubectl_bin }} get virtualmachineimage {{ item.image_name }}
+    -n {{ item.image_namespace }}
+    -o jsonpath='{.status.conditions[?(@.type=="Initialized")].status}'
+  loop: "{{ vms }}"
+  loop_control:
+    label: "{{ item.image_namespace }}/{{ item.image_name }}"
+  register: image_ready
+  changed_when: false
+  failed_when: image_ready.stdout != "True"
+
+# NOTE: This uses Harvester's "harvesterhci.io/volumeClaimTemplates"
+# annotation, which is how Harvester's own UI wires a VM's disk to an
+# existing VirtualMachineImage. The exact VirtualMachine fields Harvester
+# expects have shifted a bit between versions. If `kubectl apply` on this
+# manifest is rejected on one of your clusters, export a VM created via the
+# UI on that cluster (`kubectl get vm <name> -o yaml`) and diff it against
+# this template to see what changed.
+- name: Create Harvester virtual machines from image
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  ansible.builtin.shell: |
+    cat <<'EOF' | {{ kubectl_bin }} apply -f -
+    apiVersion: kubevirt.io/v1
+    kind: VirtualMachine
+    metadata:
+      name: {{ item.name }}
+      namespace: {{ item.namespace }}
+      annotations:
+        harvesterhci.io/volumeClaimTemplates: '{{ [{"metadata": {"name": item.name + "-disk-0", "annotations": {"harvesterhci.io/imageId": item.image_namespace + "/" + item.image_name}}, "spec": {"accessModes": ["ReadWriteMany"], "resources": {"requests": {"storage": item.disk_size | default("10Gi")}}, "volumeMode": "Block", "storageClassName": item.storage_class | default(default_storage_class_name)}}] | to_json }}'
+      labels:
+        harvesterhci.io/creator: harvester
+    spec:
+      running: {{ 'true' if (item.running | default(true)) else 'false' }}
+      template:
+        metadata:
+          labels:
+            harvesterhci.io/vmName: {{ item.name }}
+        spec:
+          domain:
+            cpu:
+              cores: {{ item.cpu_cores | default(2) }}
+            devices:
+              disks:
+                - name: disk-0
+                  disk:
+                    bus: virtio
+                - name: cloudinitdisk
+                  disk:
+                    bus: virtio
+              interfaces:
+                - name: {{ item.network_name | default('default') }}
+                  model: virtio
+                  masquerade: {}
+            resources:
+              requests:
+                memory: {{ item.memory | default("4Gi") }}
+          networks:
+            - name: {{ item.network_name | default('default') }}
+              pod: {}
+          volumes:
+            - name: disk-0
+              persistentVolumeClaim:
+                claimName: {{ item.name }}-disk-0
+            - name: cloudinitdisk
+              cloudInitNoCloud:
+                userData: |
+{{ (item.cloud_init_user_data | default(default_cloud_init_user_data)) | indent(14, first=true) }}
+          evictionStrategy: LiveMigrate
+    EOF
+  loop: "{{ vms }}"
+  loop_control:
+    label: "{{ item.namespace }}/{{ item.name }}"
+  register: vm_result
+  changed_when: "'created' in vm_result.stdout or 'configured' in vm_result.stdout"
+
+- name: Show apply results
+  ansible.builtin.debug:
+    msg: "{{ item.item.namespace }}/{{ item.item.name }}: {{ item.stdout }}"
+  loop: "{{ vm_result.results }}"
+  loop_control:
+    label: "{{ item.item.namespace }}/{{ item.item.name }}"

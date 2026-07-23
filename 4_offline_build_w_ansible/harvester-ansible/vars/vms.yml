@@ -1,0 +1,86 @@
+# vms.example.yml
+#
+# List of VMs to create on EVERY cluster in the inventory, from an
+# already-existing VirtualMachineImage (see images.example.yml).
+# Rename to vms.yml and edit as needed, then run:
+#   ansible-playbook -i inventory.ini site_vms.yml -e @vms.yml
+
+vms:
+  - name: demos-1
+    namespace: demos
+    image_name: rhel9-stigged
+    image_namespace: demos
+    cpu_cores: 4
+    memory: 8Gi
+    disk_size: 40Gi
+    running: true
+    network_name: demos
+    network_namespace: harvester-public
+    guest_interface_name: eth0
+    ip_address: 10.0.8.201/24
+    gateway: 10.0.8.1
+    nameservers:
+      - 10.0.2.250
+      - 10.0.2.252
+
+    cloud_init_user_data: |
+      #cloud-config
+      package_update: true
+      packages:
+        - qemu-guest-agent
+      ssh_authorized_keys:
+        - ssh-rsa ... user@host
+      runcmd:
+        - [ systemctl, enable, --now, qemu-guest-agent.service ]
+  - name: demos-2
+    namespace: demos
+    image_name: rhel9-stigged
+    image_namespace: demos
+    cpu_cores: 4
+    memory: 8Gi
+    disk_size: 40Gi
+    running: true
+    network_name: demos
+    network_namespace: harvester-public
+    guest_interface_name: eth0
+    ip_address: 10.0.8.202/24
+    gateway: 10.0.8.1
+    nameservers:
+      - 10.0.2.250
+      - 10.0.2.252
+
+    cloud_init_user_data: |
+      #cloud-config
+      package_update: true
+      packages:
+        - qemu-guest-agent
+      ssh_authorized_keys:
+        - ssh-rsa ... user@host
+      runcmd:
+        - [ systemctl, enable, --now, qemu-guest-agent.service ]
+  - name: demos-3
+    namespace: demos
+    image_name: rhel9-stigged
+    image_namespace: demos
+    cpu_cores: 4
+    memory: 8Gi
+    disk_size: 40Gi
+    running: true
+    network_name: demos
+    network_namespace: harvester-public
+    guest_interface_name: eth0
+    ip_address: 10.0.8.203/24
+    gateway: 10.0.8.1
+    nameservers:
+      - 10.0.2.250
+      - 10.0.2.252
+
+    cloud_init_user_data: |
+      #cloud-config
+      package_update: true
+      packages:
+        - qemu-guest-agent
+      ssh_authorized_keys:
+        - ssh-rsa ... user@host
+      runcmd:
+        - [ systemctl, enable, --now, qemu-guest-agent.service ]
