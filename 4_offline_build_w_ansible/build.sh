@@ -43,6 +43,7 @@ mkdir -p docs/${cluster_name}/post-deploy-manifests
 . ${basepath}/extras/tls-wildcard.sh
 . ${basepath}/extras/kube-vip.sh
 # MCM/Banner/UI Plugins
+. ${basepath}/extras/cert-manager.sh
 . ${basepath}/extras/mcm.sh
 . ${basepath}/extras/banner.sh
 . ${basepath}/extras/ui-plugin-charts.sh

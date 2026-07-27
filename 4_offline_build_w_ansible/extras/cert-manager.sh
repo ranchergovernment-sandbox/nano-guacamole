@@ -9,43 +9,10 @@ spec:
   createNamespace: true
   insecureSkipTLSVerify: true
   chart: oci://${offline_registry}/hauler/cert-manager
-  version: "v1.16.2"
+  version: "1.20.2"
   valuesContent: |-
     crds:
       enabled: true
-EOF
-
-envsubst <<EOF > docs/${cluster_name}/post-deploy-manifests/02-cert-manager-values.yaml
-apiVersion: helm.cattle.io/v1
-kind: HelmChartConfig
-metadata:
-  name: cert-manager
-  namespace: kube-system
-spec:
-  valuesContent: |-
-    image:
-      registry: ${offline_registry}
-      repository: jetstack/cert-manager-controller
-
-    webhook:
-      image:
-        registry: ${offline_registry}
-        repository: jetstack/cert-manager-webhook
-
-    cainjector:
-      image:
-        registry: ${offline_registry}
-        repository: jetstack/cert-manager-cainjector
-
-    startupapicheck:
-      image:
-        registry: ${offline_registry}
-        repository: jetstack/cert-manager-startupapicheck
-
-    acmesolver:
-      image:
-        registry: ${offline_registry}
-        repository: jetstack/cert-manager-acmesolver
 EOF
 
 

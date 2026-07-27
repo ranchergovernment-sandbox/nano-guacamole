@@ -6,11 +6,7 @@ rke2_manifest_config_directory: "{{ playbook_dir }}/docs/demos/pre-deploy-manife
 rke2_manifest_config_post_run_directory: "{{ playbook_dir }}/docs/demos/post-deploy-manifests/"
 
 group_rke2_config:
-  # Use Canal as the CNI
-  cni:
-   - cilium
-  disable-cloud-controller: true
-  disable-kube-proxy: true
+  ingress-controller: traefik
   profile: cis
   selinux: true
   pod-security-admission-config-file: /etc/rancher/rke2/pod-security-admission-config.yaml

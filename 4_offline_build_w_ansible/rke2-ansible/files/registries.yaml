@@ -2,9 +2,9 @@
 mirrors:
   "*":
     endpoint:
-      - "https://harbor.apps.harvester.local"
+      - "https://harbor.apps.orin.local"
 configs:
-  "harbor.apps.harvester.local":
+  "harbor.apps.orin.local":
 #    auth:
 #      username: xxxxxx   # this is the registry username
 #      password: xxxxxx   # this is the registry password

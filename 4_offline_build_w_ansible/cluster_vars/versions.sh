@@ -18,11 +18,11 @@
 # Variables
 
 #RKE2
-export RKE2_MAJOR=1.34
+export RKE2_MAJOR=1.35
 export RKE2_MINOR=6
 
 #Rancher
-export RANCHERVER=2.13.4
+export RANCHERVER=2.14.3
 
 #Hauler Release
 export vHauler=1.4.2
@@ -31,7 +31,7 @@ export vHauler=1.4.2
 export LONGHORNVER=v1.11.1
 
 #Cert Manager
-export CERTMANAGERVER=v1.16.2
+export CERTMANAGERVER=1.20.2
 
 #Kubectl
 export KUBECTLVER=v1.30.0

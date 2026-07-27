@@ -8,7 +8,7 @@ spec:
   targetNamespace: kube-system
   insecureSkipTLSVerify: true
   chart: oci://${offline_registry}/hauler/kube-vip
-  version: "0.6.6"
+  version: "0.9.1"
   valuesContent: |-
     config:
       address: ${mgmt_vip}
