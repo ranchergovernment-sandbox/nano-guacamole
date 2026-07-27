@@ -44,7 +44,7 @@ mkdir -p docs/${cluster_name}/post-deploy-manifests
 . ${basepath}/extras/kube-vip.sh
 # MCM/Banner/UI Plugins
 . ${basepath}/extras/cert-manager.sh
-. ${basepath}/extras/mcm.sh
+. ${basepath}/extras/mcm-w-cert-manager.sh
 . ${basepath}/extras/banner.sh
 . ${basepath}/extras/ui-plugin-charts.sh
 
@@ -85,7 +85,7 @@ group_rke2_config:
   ingress-controller: traefik
   profile: cis
   selinux: true
-  pod-security-admission-config-file: /etc/rancher/rke2/pod-security-admission-config.yaml
+  pod-security-admission-config-file: /etc/rancher/rke2/rke2-pss.yaml
   kube-controller-manager-arg:
    - bind-address=127.0.0.1
    - use-service-account-credentials=true
