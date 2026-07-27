@@ -1,0 +1,15 @@
+global:
+  imageRegistry: "registry.ranchercarbide.dev"
+externalURL: https://<harbor fqdn>
+expose:
+  tls:
+    certSource: secret
+    secret:
+      secretName: "<secret name>"
+  ingress:
+    hosts:
+      core: <harbor fqdn>
+persistence:
+  persistentVolumeClaim:
+    registry:
+      size: 1000Gi
