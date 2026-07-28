@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: server
-        image: ${offline_registry}/rancher/ui-plugin-catalog:4.9.0
+        image: ${offline_registry}/rancher/ui-plugin-catalog:4.28.0
         imagePullPolicy: IfNotPresent
 ---
 apiVersion: v1

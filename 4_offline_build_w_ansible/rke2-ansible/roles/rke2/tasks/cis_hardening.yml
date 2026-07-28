@@ -1,5 +1,4 @@
 ---
-
 - name: CIS MODE
   become: true
   when:
