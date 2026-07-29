@@ -1,0 +1,23 @@
+---
+apiVersion: content.hauler.cattle.io/v1
+kind: Charts
+metadata:
+  name: carbide-dependency-charts
+spec:
+  charts:
+    - name: kube-vip
+      repoURL: https://kube-vip.github.io/helm-charts
+      version: 0.9.1
+    - name: kube-vip-cloud-provider
+      repoURL: https://kube-vip.github.io/helm-charts
+      version: 0.2.10
+---
+apiVersion: content.hauler.cattle.io/v1
+kind: Images
+metadata:
+  name: kube-vip
+spec:
+  images:
+    - name: ghcr.io/kube-vip/kube-vip:v1.0.2
+    - name: ghcr.io/kube-vip/kube-vip:v1.0.1
+    - name: index.docker.io/kubevip/kube-vip-cloud-provider:v0.0.12

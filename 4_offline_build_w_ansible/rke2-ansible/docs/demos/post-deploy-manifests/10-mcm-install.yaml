@@ -1,0 +1,12 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  namespace: kube-system
+  name: rancher
+spec:
+  targetNamespace: cattle-system
+  createNamespace: true
+  insecureSkipTLSVerify: true
+  systemDefaultRegistry: harbor.apps.orin.local
+  chart: oci://harbor.apps.orin.local/hauler/rancher
+  version: 2.14.3

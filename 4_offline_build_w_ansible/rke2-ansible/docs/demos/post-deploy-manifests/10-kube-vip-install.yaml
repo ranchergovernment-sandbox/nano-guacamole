@@ -1,0 +1,18 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  namespace: kube-system
+  name: kube-vip
+spec:
+  targetNamespace: kube-system
+  insecureSkipTLSVerify: true
+  chart: oci://harbor.apps.orin.local/hauler/kube-vip
+  version: "0.9.1"
+  valuesContent: |-
+    config:
+      address: 10.0.8.200
+    env:
+      vip_interface: enp1s0
+      cp_enable: "true"
+      lb_enable: "false"
+      vip_leaderelection: "true"

@@ -1,0 +1,8 @@
+apiVersion: content.hauler.cattle.io/v1alpha1
+kind: Charts
+metadata:
+  name: keycloak-charts
+spec:
+  charts:
+    - name: keycloakx
+      repoURL: https://codecentric.github.io/helm-charts

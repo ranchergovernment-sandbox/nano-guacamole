@@ -1,0 +1,13 @@
+---
+apiVersion: content.hauler.cattle.io/v1
+kind: Images
+metadata:
+  name: stig-manager-images
+spec:
+  images:
+    - name: nuwcdivnpt/stig-manager
+      version: latest
+    - name: nuwcdivnpt/stig-manager-auth
+      version: latest
+    - name: mysql
+      version: 8.0

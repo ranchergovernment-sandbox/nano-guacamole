@@ -1,0 +1,19 @@
+apiVersion: content.hauler.cattle.io/v1
+kind: Charts
+metadata:
+  name: trust-manager
+spec:
+  charts:
+    - name: trust-manager
+      repoURL: https://charts.jetstack.io
+      version: v0.20.2
+---
+apiVersion: content.hauler.cattle.io/v1
+kind: Images
+metadata:
+  name: trust-manager
+spec:
+  images:
+    - name: quay.io/jetstack/trust-manager:v0.20.2
+    - name: quay.io/jetstack/trust-pkg-debian-bookworm:20230311-deb12u1.2
+
